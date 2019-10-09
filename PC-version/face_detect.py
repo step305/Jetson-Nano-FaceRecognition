@@ -93,7 +93,7 @@ def recognition(frameBuffer, objsBuffer, stop_prog):
         rgb_img = bgr_img[:, :, ::-1].copy()
         arr_img = Image.fromarray(rgb_img)
         t1 = time.monotonic()
-        objs = engine.DetectWithImage(arr_img, threshold = 0.1, keep_aspect_ratio = True, relative_coord = False, top_k = 5)
+        objs = engine.DetectWithImage(arr_img, threshold = 0.1, keep_aspect_ratio = True, relative_coord = False, top_k = 100)
         t2 = time.monotonic()
         coral_boxes = []
         for obj in objs:
