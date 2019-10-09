@@ -10,7 +10,7 @@ import time
 from time import sleep
 
 def camThread(frameBuffer, results, stop_prog):
-    cam = cv2.VideoCapture(10)
+    cam = cv2.VideoCapture(0)
     cam.set(cv2.CAP_PROP_FPS, 15)
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
