@@ -106,6 +106,7 @@ def recognition(frameBuffer, objsBuffer, stop_prog):
             y1 = int(y1)
             coral_boxes.append((y0, x1, y1, x0))
         t3 = time.monotonic()
+        kk = 1
         if coral_boxes:
             enc = face_recognition.face_encodings(rgb_img, coral_boxes)
             closest_distances = knn_clf.kneighbors(enc, n_neighbors=1)
@@ -116,7 +117,8 @@ def recognition(frameBuffer, objsBuffer, stop_prog):
                 if rec:
                     predR.append(pred)
                 else:
-                    predR.append("unknown")
+                    predR.append("unknown_{n}".format(n=kk))
+                    kk += 1
                 locR.append(loc)
             if objsBuffer.empty():
                 objsBuffer.put({"boxes": locR, "names": predR})
