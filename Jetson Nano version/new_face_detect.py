@@ -61,6 +61,7 @@ def camThread(frameBuffer, results, MJPEGQueue, persBuffer, stop_prog, file2log)
     t0 = time.monotonic()
     last_result=None
     frames_cnt = 0
+    persons=None
     while True:
         ret, frame = cam.read()
         if not ret:
@@ -76,7 +77,7 @@ def camThread(frameBuffer, results, MJPEGQueue, persBuffer, stop_prog, file2log)
             imdraw = overlay_on_image(frame,last_result)
         if not persBuffer.empty():
             persons = persBuffer.get(False)
-            imdraw = overlay_faces(imdraw, persons)
+        imdraw = overlay_faces(imdraw, persons)
         cv2.imshow('Video', imdraw)
         frames_cnt += 1
         if frames_cnt >= 15:
@@ -95,7 +96,7 @@ def overlay_faces(frame, persons):
     img = frame.copy()
     if isinstance(persons, type(None)):
         return img
-    x = 1280-288
+    x = 1920-288
     y = 1
     for person in persons:
         img[x:x+288, y:y+216] = person["face_image"]
@@ -106,7 +107,7 @@ def overlay_faces(frame, persons):
         cv2.putText(img, visit_label, (x, y+184), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
         cv2.putText(img, person["name"], (x, y+200), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
         y += 216
-        if y >= 648:
+        if y >= 1080:
             break
     return img
 
@@ -206,8 +207,8 @@ def recognition(frameBuffer, objsBuffer, persBuffer, stop_prog):
             else:
                 persBuffer.put(None)
         t4 = time.monotonic()
-        print('Prep time = {dt1:.1f}ms, Infer time = {dt2:.1f}ms, Face enc time = {dt3:.1f}ms, Overall time = {dt4:.1f}ms'.format(
-            dt1=(t1-t0)*1000, dt2=(t2-t1)*1000, dt3=(t4-t3)*1000, dt4 = (t4-t0)*1000))
+        #print('Prep time = {dt1:.1f}ms, Infer time = {dt2:.1f}ms, Face enc time = {dt3:.1f}ms, Overall time = {dt4:.1f}ms'.format(
+        #    dt1=(t1-t0)*1000, dt2=(t2-t1)*1000, dt3=(t4-t3)*1000, dt4 = (t4-t0)*1000))
 
 class StreamingHandler(server.BaseHTTPRequestHandler):
     def do_GET(self):
