@@ -36,8 +36,8 @@ def camThread(frameBuffer, results, MJPEGQueue, persBuffer, stop_prog, file2log)
     capture_height=2464
     frame_rate=21
     flip_method=2
-    display_width=1920
-    display_height=1080
+    display_width=1280
+    display_height=720
     record_width=1280
     record_height=720
     # gstreamer_pipeline = ('nvarguscamerasrc !  video/x-raw(memory:NVMM), width={capturewidth}, height={captureheight}, framerate={framerate}/1, format=NV12 '
@@ -96,7 +96,7 @@ def overlay_faces(frame, persons):
     img = frame.copy()
     if isinstance(persons, type(None)):
         return img
-    x = 1920-288
+    x = 1280-288
     y = 1
     for person in persons:
         img[y:y+216, x:x+288] = person["face_image"]
@@ -107,7 +107,7 @@ def overlay_faces(frame, persons):
         cv2.putText(img, visit_label, (x, y+184), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
         cv2.putText(img, person["name"], (x, y+200), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
         y += 216
-        if y >= 1080:
+        if y >= 684:
             break
     return img
 
