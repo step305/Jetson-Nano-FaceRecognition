@@ -104,7 +104,7 @@ def overlay_faces(frame, persons):
         else:
             visit_label = "{} visits".format(person["seen_count"])
         cv2.putText(img, visit_label, (x, y+184), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
-        cv2.putText(img, person.name, (x, y+200), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
+        cv2.putText(img, person["name"], (x, y+200), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
         y += 216
         if y >= 1080:
             break
@@ -131,10 +131,10 @@ def recognition(frameBuffer, objsBuffer, persBuffer, stop_prog):
         face_image = cv2.imread(os.path.join("/home/nano/visi/Jetson-Nano-FaceRecognition/Faces/", class_dir, "face_ID.jpg"))
         face_image = cv2.resize(face_image, (288,216))
         known_persons[class_dir]={
-            "first_seen": 0,
+            "first_seen": datetime(1,1,1),
             "name": class_dir,
-            "first_seen_this_interaction": 0,
-            "last_seen": 0,
+            "first_seen_this_interaction": datetime(1,1,1),
+            "last_seen": datetime(1,1,1),
             "seen_count": 0,
             "seen_frames": 0,
             "face_image": face_image
@@ -173,7 +173,7 @@ def recognition(frameBuffer, objsBuffer, persBuffer, stop_prog):
                 if rec:
                     person_found = known_persons.get(pred)
                     if person_found != None:
-                        if known_persons[pred]["first_seen"] != 0:
+                        if known_persons[pred]["first_seen"] != datetime(1,1,1):
                             known_persons[pred]["last_seen"] = datetime.now()
                             known_persons[pred]["seen_frames"] += 1
                             if datetime.now() - known_persons[pred]["first_seen_this_interaction"] > timedelta(minutes=5):
