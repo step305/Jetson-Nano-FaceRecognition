@@ -95,10 +95,10 @@ def overlay_faces(frame, persons):
     img = frame.copy()
     if isinstance(persons, type(None)):
         return img
-    x = 1920-288
-    y = 0
+    x = 1280-288
+    y = 1
     for person in persons:
-        img[x:x+287, y:y+215] = person["face_image"]
+        img[x:x+288, y:y+216] = person["face_image"]
         if person["seen_count"] == 1:
             visit_label = "First visit"
         else:
@@ -106,7 +106,7 @@ def overlay_faces(frame, persons):
         cv2.putText(img, visit_label, (x, y+184), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
         cv2.putText(img, person["name"], (x, y+200), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
         y += 216
-        if y >= 1080:
+        if y >= 648:
             break
     return img
 
