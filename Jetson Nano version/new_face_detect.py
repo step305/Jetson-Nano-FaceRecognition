@@ -199,8 +199,8 @@ def recognition(frameBuffer, objsBuffer, persBuffer, stop_prog):
         dtnow = datetime.now()
         visi_faces = []
         for pers in known_persons:
-            if datetime.now()-known_persons[pred]["last_seen"]>timedelta(1):
-                known_persons[pred]["seen_frames"] = 0
+            if datetime.now()-known_persons[pers]["last_seen"]>timedelta(1):
+                known_persons[pers]["seen_frames"] = 0
             if dtnow-known_persons[pers]["last_seen"] < timedelta(seconds=10) and known_persons[pers]["seen_frames"] > 60:
                 visi_faces.append(known_persons[pers])
         if persBuffer.empty():
