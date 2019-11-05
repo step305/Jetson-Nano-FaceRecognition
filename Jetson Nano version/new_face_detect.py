@@ -136,7 +136,8 @@ def greeting(namesBuffer, stop_prog):
             continue
         if first_seen_Mark == 0:
             for name in names:
-                if name == 'Mark':
+                if name == 'Aleshin B.S.':
+                    print('Greeting!')
                     os.system(strSound)
                     first_seen_Mark = 1
 
