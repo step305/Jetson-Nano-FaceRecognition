@@ -123,7 +123,24 @@ def overlay_on_image(frame, result):
         #cv2.putText(img, '{d}'.format(d=name), (x0+6,y1-6), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
     return img
 
-def recognition(frameBuffer, objsBuffer, persBuffer, stop_prog):
+def greeting(namesBuffer, stop_prog):
+    first_seen_Mark = 0
+    strSound='gst-launch-1.0 filesrc location=/home/robo/victory.ogg ! oggdemux ! vorbisdec ! audioconvert ! audioresample ! pulsesink'
+    while True:
+        if stop_prog.is_set():
+            break
+        if namesBuffer.empty():
+            continue
+        names = namesBuffer.get()
+        if isinstance(names, type(None)):
+            continue
+        if first_seen_Mark == 0:
+            for name in names:
+                if name == 'Mark':
+                    os.system(strSound)
+                    first_seen_Mark = 1
+
+def recognition(frameBuffer, objsBuffer, persBuffer, namesBuffer, stop_prog):
     engine = DetectionEngine('mobilenet_ssd_v2_face_quant_postprocess_edgetpu.tflite')
     with open("trained_knn_model.clf", 'rb') as f:
         knn_clf = pickle.load(f)
@@ -193,9 +210,13 @@ def recognition(frameBuffer, objsBuffer, persBuffer, stop_prog):
                 locR.append(loc)
             if objsBuffer.empty():
                 objsBuffer.put({"boxes": locR, "names": predR})
+            if namesBuffer.empty():
+                namesBuffer.put(predR)
         else:
             if objsBuffer.empty():
                 objsBuffer.put(None)
+            if namesBuffer.empty():
+                namesBuffer.put(None)
         dtnow = datetime.now()
         visi_faces = []
         for pers in known_persons:
@@ -285,10 +306,13 @@ if __name__ == '__main__':
     resultRecogn = multiprocessing.Queue(2)
     persBuffer = multiprocessing.Queue(2)
     MJPEGQueue = multiprocessing.Queue(10)
+    NamesQueue = multiprocessing.Queue(2)
     camProc = Process(target=camThread, args=(recImage, resultRecogn, MJPEGQueue, persBuffer,  prog_stop, 'test.avi'), daemon=True)
     camProc.start()
-    frecogn = Process(target=recognition, args=(recImage, resultRecogn, persBuffer, prog_stop), daemon=True)
+    frecogn = Process(target=recognition, args=(recImage, resultRecogn, persBuffer, NamesQueue, prog_stop), daemon=True)
     frecogn.start()
+    greet = Process(target=greeting, args=(NamesQueue, prog_stop), daemon=True)
+    greet.start()
     serverProc = Process(target=server_start, args=(MJPEGQueue, prog_stop1), daemon=True)
     serverProc.start()
 
@@ -296,6 +320,7 @@ if __name__ == '__main__':
         if prog_stop.is_set():
             camProc.terminate()
             frecogn.terminate()
+            greet.terminate()
             serverProc.terminate()
             break
         sleep(1)
