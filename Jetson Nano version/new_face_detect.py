@@ -120,7 +120,7 @@ def overlay_on_image(frame, result):
     for box, name in zip(boxes,encod):
         y0, x1, y1, x0 = box
         cv2.rectangle(img, (x0,y0), (x1,y1), (255,0,0), 3)
-        cv2.putText(img, '{d}'.format(d=name), (x0+6,y1-6), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
+        #cv2.putText(img, '{d}'.format(d=name), (x0+6,y1-6), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
     return img
 
 def recognition(frameBuffer, objsBuffer, persBuffer, stop_prog):
@@ -150,7 +150,7 @@ def recognition(frameBuffer, objsBuffer, persBuffer, stop_prog):
         rgb_img = bgr_img[:, :, ::-1].copy()
         arr_img = Image.fromarray(rgb_img)
         t1 = time.monotonic()
-        objs = engine.DetectWithImage(arr_img, threshold = 0.1, keep_aspect_ratio = True, relative_coord = False, top_k = 100)
+        objs = engine.detect_with_image(arr_img, threshold = 0.1, keep_aspect_ratio = True, relative_coord = False, top_k = 100)
         t2 = time.monotonic()
         coral_boxes = []
         for obj in objs:
@@ -199,7 +199,9 @@ def recognition(frameBuffer, objsBuffer, persBuffer, stop_prog):
         dtnow = datetime.now()
         visi_faces = []
         for pers in known_persons:
-            if dtnow-known_persons[pers]["last_seen"] < timedelta(seconds=30) and known_persons[pers]["seen_frames"] > 5:
+            if datetime.now()-known_persons[pred]["last_seen"]>timedelta(1):
+                known_persons[pred]["seen_frames"] = 0
+            if dtnow-known_persons[pers]["last_seen"] < timedelta(seconds=10) and known_persons[pers]["seen_frames"] > 60:
                 visi_faces.append(known_persons[pers])
         if persBuffer.empty():
             if len(visi_faces) > 0:
