@@ -36,8 +36,8 @@ def camThread(frameBuffer, results, MJPEGQueue, persBuffer, stop_prog, file2log)
     capture_height=2464
     frame_rate=21
     flip_method=2
-    display_width=1280
-    display_height=720
+    display_width=1920
+    display_height=1080
     record_width=1280
     record_height=720
     # gstreamer_pipeline = ('nvarguscamerasrc !  video/x-raw(memory:NVMM), width={capturewidth}, height={captureheight}, framerate={framerate}/1, format=NV12 '
