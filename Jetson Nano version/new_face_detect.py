@@ -99,7 +99,7 @@ def overlay_faces(frame, persons):
     x = 1920-288
     y = 1
     for person in persons:
-        img[x:x+288, y:y+216] = person["face_image"]
+        img[y:y+216, x:x+288] = person["face_image"]
         if person["seen_count"] == 1:
             visit_label = "First visit"
         else:
