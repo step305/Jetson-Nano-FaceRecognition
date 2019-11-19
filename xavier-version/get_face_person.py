@@ -10,19 +10,18 @@ import time
 from time import sleep
 
 def camThread(frameBuffer, results, stop_prog, file2log):
-    capture_width=3264
-    capture_height=2464
-    frame_rate=30
+    capture_width=1920
+    capture_height=1080
+    frame_rate=21
     flip_method=2
     display_width=1280
     display_height=720
     record_width=1280
     record_height=720
-    #gstreamer_pipeline = ('nvarguscamerasrc !  video/x-raw(memory:NVMM), width={capturewidth}, height={captureheight}, framerate={framerate}/1, format=NV12 '
-    #    '! tee name=streams streams. ! queue ! nvvidconv flip-method={flipmethod} ! video/x-raw, width={displaywidth}, height={displayheight}, frame_rate={framerate}/1, '
-    #    'format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink ').format(capturewidth=capture_width, captureheight=capture_height, framerate=frame_rate, displaywidth=display_width,
-    #    displayheight=display_height, flipmethod=flip_method)
-    gstreamer_pipeline = ('v4l2src device=/dev/video0 do-timestamp=true !  video/x-raw, width=1920, height=1080, framerate=30/1 ! tee name=streams streams. ! nvvidconv ! videoconvert ! video/x-raw, format=BGR ! appsink')
+    gstreamer_pipeline = ('nvarguscamerasrc !  video/x-raw(memory:NVMM), width={capturewidth}, height={captureheight}, framerate={framerate}/1, format=NV12 '
+        '! tee name=streams streams. ! queue ! nvvidconv flip-method={flipmethod} ! video/x-raw, width={displaywidth}, height={displayheight}, frame_rate={framerate}/1, '
+        'format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink ').format(capturewidth=capture_width, captureheight=capture_height, framerate=frame_rate, displaywidth=display_width,
+        displayheight=display_height, flipmethod=flip_method)
     cam = cv2.VideoCapture(gstreamer_pipeline, cv2.CAP_GSTREAMER)
     # cam = cv2.VideoCapture(0)
     # cam.set(cv2.CAP_PROP_FPS, 15)
@@ -86,7 +85,7 @@ def recognition(frameBuffer, objsBuffer, stop_prog, path):
         rgb_img = bgr_img[:, :, ::-1].copy()
         arr_img = Image.fromarray(rgb_img)
         t1 = time.monotonic()
-        objs = engine.detect_with_image(arr_img, threshold = 0.1, keep_aspect_ratio = True, relative_coord = False, top_k = 5)
+        objs = engine.DetectWithImage(arr_img, threshold = 0.1, keep_aspect_ratio = True, relative_coord = False, top_k = 5)
         t2 = time.monotonic()
         coral_boxes = []
         m = 0
@@ -117,7 +116,7 @@ if __name__ == '__main__':
     resultRecogn = multiprocessing.Queue(2)
     camProc = Process(target=camThread, args=(recImage, resultRecogn, prog_stop, 'test.avi'), daemon=True)
     camProc.start()
-    frecogn = Process(target=recognition, args=(recImage, resultRecogn, prog_stop, "/home/robo/visi/Jetson-Nano-FaceRecognition/Faces/all/"), daemon=True)
+    frecogn = Process(target=recognition, args=(recImage, resultRecogn, prog_stop, "/home/nano/visi/Jetson-Nano-FaceRecognition/Faces/Stepan/"), daemon=True)
     frecogn.start()
 
     while True:
