@@ -32,8 +32,8 @@ HTML_PAGE="""\
 """
 
 def camThread(frameBuffer, results, MJPEGQueue, persBuffer, stop_prog, file2log):
-    capture_width=3264
-    capture_height=2464
+    capture_width=1920
+    capture_height=1080
     frame_rate=21
     flip_method=2
     display_width=1280
@@ -51,18 +51,26 @@ def camThread(frameBuffer, results, MJPEGQueue, persBuffer, stop_prog, file2log)
     #    '! tee name=streams streams. ! queue ! nvvidconv flip-method={flipmethod} ! video/x-raw, width={displaywidth}, height={displayheight}, frame_rate={framerate}/1, '
     #    'format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink ').format(capturewidth=capture_width, captureheight=capture_height, framerate=frame_rate, displaywidth=display_width,
     #    displayheight=display_height, flipmethod=flip_method)
-    gstreamer_pipeline = ('v4l2src device=/dev/video0 do-timestamp=true !  video/x-raw, width=1920, height=1080, framerate=30/1 ! tee name=streams streams. ! nvvidconv ! videoconvert ! video/x-raw, format=BGR ! appsink')
+    os.system('v4l2-ctl --set-ctrl=zoom_absolute=150')
+    gstreamer_pipeline = ('v4l2src device=/dev/video0 do-timestamp=true !  video/x-raw, width=1280, height=720, framerate=30/1 ! tee name=streams streams. ! nvvidconv ! videoflip method=4 ! video/x-raw ! videoconvert ! video/x-raw, format=BGR ! appsink')
     cam = cv2.VideoCapture(gstreamer_pipeline, cv2.CAP_GSTREAMER)
     # cam = cv2.VideoCapture(0)
     # cam.set(cv2.CAP_PROP_FPS, 15)
     # cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     # cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-    window_name = 'Video'
-    cv2.namedWindow(window_name, cv2.WINDOW_AUTOSIZE)
+    main_window_name = 'Video'
+    cv2.namedWindow(main_window_name, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(main_window_name, 1280,720)
+    cv2.moveWindow(main_window_name, 80,20)
+    aux_window_name = 'Persons'
+    cv2.namedWindow(aux_window_name, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(aux_window_name, 330,1080)
+    cv2.moveWindow(aux_window_name, 1500,20)
     t0 = time.monotonic()
     last_result=None
     frames_cnt = 0
     persons=None
+    blank_persons = 255*np.ones(shape=[330,1080,3], dtype=np.uint8)
     while True:
         ret, frame = cam.read()
         if not ret:
@@ -78,8 +86,10 @@ def camThread(frameBuffer, results, MJPEGQueue, persBuffer, stop_prog, file2log)
             imdraw = overlay_on_image(frame,last_result)
         if not persBuffer.empty():
             persons = persBuffer.get(False)
-        imdraw = overlay_faces(imdraw, persons)
-        cv2.imshow('Video', imdraw)
+        blank_persons = 255*np.ones(shape=[1080,330,3], dtype=np.uint8)
+        blank_persons = overlay_faces(blank_persons, persons)
+        cv2.imshow(aux_window_name, blank_persons)
+        cv2.imshow(main_window_name, imdraw)
         frames_cnt += 1
         if frames_cnt >= 15:
             t1 = time.monotonic()
@@ -97,18 +107,18 @@ def overlay_faces(frame, persons):
     img = frame.copy()
     if isinstance(persons, type(None)):
         return img
-    x = 1280-288
-    y = 1
+    x = 0
+    y = 0
     for person in persons:
-        img[y:y+216, x:x+288] = person["face_image"]
+        img[y:y+216, x:x+330] = person["face_image"]
         if person["seen_count"] == 1:
             visit_label = "First visit"
         else:
             visit_label = "{} visits".format(person["seen_count"])
-        cv2.putText(img, visit_label, (x, y+184), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
-        cv2.putText(img, person["name"], (x, y+200), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
+        #cv2.putText(img, visit_label, (x, y+184), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
+        #cv2.putText(img, person["name"], (x, y+200), cv2.FONT_HERSHEY_DUPLEX, 0.8, (255,0,0), 2)
         y += 216
-        if y >= 684:
+        if y >= 1080:
             break
     return img
 
@@ -125,8 +135,16 @@ def overlay_on_image(frame, result):
     return img
 
 def greeting(namesBuffer, stop_prog):
-    first_seen_Mark = 0
-    strSound='gst-launch-1.0 filesrc location=/home/robo/victory.ogg ! oggdemux ! vorbisdec ! audioconvert ! audioresample ! pulsesink'
+    greet_persons={}
+    for class_dir in os.listdir("/home/robo/visi/Jetson-Nano-FaceRecognition/Faces/"):
+        greet_path=os.path.join("/home/robo/visi/Jetson-Nano-FaceRecognition/Faces/", class_dir, "Greet.ogg")
+        strSound='gst-launch-1.0 filesrc location="{}" ! oggdemux ! opusdec ! audioconvert ! audioresample ! pulsesink'.format(greet_path)
+        greet_persons[class_dir]={
+            "greet_path": greet_path,
+            "greet_command": strSound,
+            "name": class_dir,
+            "first_seen": 0
+        }
     while True:
         if stop_prog.is_set():
             break
@@ -135,12 +153,15 @@ def greeting(namesBuffer, stop_prog):
         names = namesBuffer.get()
         if isinstance(names, type(None)):
             continue
-        if first_seen_Mark == 0:
-            for name in names:
-                if name == 'Aleshin B.S.':
-                    print('Greeting!')
-                    os.system(strSound)
-                    first_seen_Mark = 1
+        for name in names:
+            if greet_persons.get(name) != None:
+                if greet_persons[name]["first_seen"] == 0:
+                    greet_persons[name]["first_seen"] = 1
+                    print('Greeting {}!'.format(name))
+                    os.system(greet_persons[name]["greet_command"])
+                    sleep(2)
+                    break
+        names = []        
 
 def recognition(frameBuffer, objsBuffer, persBuffer, namesBuffer, stop_prog):
     engine = DetectionEngine('mobilenet_ssd_v2_face_quant_postprocess_edgetpu.tflite')
@@ -149,7 +170,7 @@ def recognition(frameBuffer, objsBuffer, persBuffer, namesBuffer, stop_prog):
     known_persons={}
     for class_dir in os.listdir("/home/robo/visi/Jetson-Nano-FaceRecognition/Faces/"):
         face_image = cv2.imread(os.path.join("/home/robo/visi/Jetson-Nano-FaceRecognition/Faces/", class_dir, "face_ID.jpg"))
-        face_image = cv2.resize(face_image, (288,216))
+        #face_image = cv2.resize(face_image, (288,216))
         known_persons[class_dir]={
             "first_seen": datetime(1,1,1),
             "name": class_dir,
@@ -186,7 +207,7 @@ def recognition(frameBuffer, objsBuffer, persBuffer, namesBuffer, stop_prog):
         if coral_boxes:
             enc = face_recognition.face_encodings(rgb_img, coral_boxes)
             closest_distances = knn_clf.kneighbors(enc, n_neighbors=1)
-            are_matches = [closest_distances[0][i][0] <= 0.55 for i in range(len(coral_boxes))]
+            are_matches = [closest_distances[0][i][0] <= 0.45 for i in range(len(coral_boxes))]
             predR = []
             locR = []
             for pred, loc, rec in zip(knn_clf.predict(enc), coral_boxes, are_matches):
@@ -212,25 +233,28 @@ def recognition(frameBuffer, objsBuffer, persBuffer, namesBuffer, stop_prog):
                 locR.append(loc)
             if objsBuffer.empty():
                 objsBuffer.put({"boxes": locR, "names": predR})
-            if namesBuffer.empty():
-                namesBuffer.put(predR)
         else:
             if objsBuffer.empty():
                 objsBuffer.put(None)
-            if namesBuffer.empty():
-                namesBuffer.put(None)
         dtnow = datetime.now()
         visi_faces = []
         for pers in known_persons:
-            if datetime.now()-known_persons[pers]["last_seen"]>timedelta(seconds=2):
+            if datetime.now()-known_persons[pers]["last_seen"]>timedelta(seconds=4):
                 known_persons[pers]["seen_frames"] = 0
             #if dtnow-known_persons[pers]["last_seen"] < timedelta(seconds=10) and known_persons[pers]["seen_frames"] > 30:
-            if known_persons[pers]["seen_frames"] > 30:
+            if known_persons[pers]["seen_frames"] > 10:
                 visi_faces.append(known_persons[pers])
         if persBuffer.empty():
             if len(visi_faces) > 0:
+                if namesBuffer.empty():
+                    pp = []
+                    for f in visi_faces:
+                        pp.append(f["name"])
+                    namesBuffer.put(pp)
                 persBuffer.put(visi_faces)
             else:
+                if namesBuffer.empty():
+                    namesBuffer.put(None)
                 persBuffer.put(None)
         t4 = time.monotonic()
         #print('Prep time = {dt1:.1f}ms, Infer time = {dt2:.1f}ms, Face enc time = {dt3:.1f}ms, Overall time = {dt4:.1f}ms'.format(
