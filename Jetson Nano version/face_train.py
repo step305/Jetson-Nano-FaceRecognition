@@ -71,5 +71,5 @@ def train(train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree
 
 if __name__ == "__main__":
     print("Training KNN classifier...")
-    classifier = train("/home/nano/visi/Jetson-Nano-FaceRecognition/Faces/", model_save_path="trained_knn_model.clf", n_neighbors=2)
+    classifier = train("/home/nano/visi/Jetson-Nano-FaceRecognition/Faces/", model_save_path="trained_knn_model.clf", n_neighbors=3)
     print("Training complete!")
